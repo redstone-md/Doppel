@@ -58,8 +58,21 @@ func (rt *RoundTripper) init() {
 	})
 }
 
-// RoundTrip implements http.RoundTripper.
+// RoundTrip implements http.RoundTripper. The response body is transparently
+// decompressed so the client always receives a decodable stream.
 func (rt *RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := rt.roundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := decodeResponse(resp); err != nil {
+		_ = resp.Body.Close()
+		return nil, fmt.Errorf("decode response body: %w", err)
+	}
+	return resp, nil
+}
+
+func (rt *RoundTripper) roundTrip(req *http.Request) (*http.Response, error) {
 	rt.init()
 	host := req.URL.Host
 
