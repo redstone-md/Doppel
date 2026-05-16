@@ -1,0 +1,25 @@
+# Build artifacts
+/doppel
+/doppel.exe
+/dist/
+*.test
+*.out
+coverage.txt
+coverage.html
+
+# Runtime data: CA private keys, minted certs, local state.
+# These are machine-specific and MUST NOT be committed.
+/data/
+*.pem
+*.key
+*.crt
+
+# Environment
+.env
+.env.local
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
