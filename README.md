@@ -160,7 +160,10 @@ template, ALPN list, User-Agent, header set and ordering. Built-in profiles:
 | Name | Device |
 |---|---|
 | `iphone15-safari` | iPhone 15 Pro, iOS 17, Mobile Safari |
+| `chrome-android` | Chrome 131 on Android 14 (Pixel 8) |
 | `chrome-windows` | Chrome 131 on Windows 11 |
+| `firefox-windows` | Firefox 133 on Windows 11 |
+| `safari-macos` | Safari 17 on macOS Sonoma |
 
 Custom profiles are JSON files dropped into the profiles directory
 (`doppel ca` shows the data directory location). A profile that shares a name
@@ -202,9 +205,11 @@ internal/wizard       first-run setup guidance
   order) — currently the upstream HTTP/2 layer carries Go's own fingerprint.
 - Pinned, version-exact `ClientHello` specs per profile, instead of uTLS
   "auto" templates.
-- Connection pooling and HTTP/2 stream multiplexing on the upstream leg.
 - Dynamic mutation within a profile's realistic envelope.
-- Response body re-encoding so clients always receive a decodable stream.
+- An idle timeout for long-lived keep-alive client connections.
+
+Done since the initial cut: per-host HTTP/2 connection pooling, and
+transparent gzip / brotli / zstd / deflate response decoding.
 
 ## Security
 
