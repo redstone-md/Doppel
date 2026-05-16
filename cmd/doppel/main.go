@@ -128,14 +128,20 @@ func cmdRun(args []string) error {
 		return err
 	}
 
+	transport := &upstream.RoundTripper{
+		Dialer:  &upstream.Dialer{SkipVerify: *insecure},
+		Profile: selected,
+	}
+	defer transport.Close()
+
 	server := &proxy.Server{
 		Addr:   cfg.Addr,
 		Logger: logger,
 		Interceptor: &mitm.Interceptor{
-			CA:      authority,
-			Profile: selected,
-			Dialer:  &upstream.Dialer{SkipVerify: *insecure},
-			Logger:  logger,
+			CA:        authority,
+			Profile:   selected,
+			Transport: transport,
+			Logger:    logger,
 		},
 	}
 
@@ -232,6 +238,8 @@ func cmdVerify(args []string) error {
 	}
 
 	rt := &upstream.RoundTripper{Dialer: &upstream.Dialer{}, Profile: selected}
+	defer rt.Close()
+
 	req, err := http.NewRequest(http.MethodGet, *url, nil)
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)

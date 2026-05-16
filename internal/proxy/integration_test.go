@@ -58,15 +58,21 @@ func newFixture(t *testing.T, body string) fixture {
 		t.Fatalf("load builtin profiles: %v", err)
 	}
 
+	// The httptest backend uses a self-signed certificate, so upstream
+	// verification is disabled for this test only.
+	transport := &upstream.RoundTripper{
+		Dialer:  &upstream.Dialer{SkipVerify: true},
+		Profile: profiles["chrome-windows"],
+	}
+	t.Cleanup(func() { _ = transport.Close() })
+
 	server := &proxy.Server{
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Interceptor: &mitm.Interceptor{
-			CA:      authority,
-			Profile: profiles["chrome-windows"],
-			// The httptest backend uses a self-signed certificate, so
-			// upstream verification is disabled for this test only.
-			Dialer: &upstream.Dialer{SkipVerify: true},
-			Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+			CA:        authority,
+			Profile:   profiles["chrome-windows"],
+			Transport: transport,
+			Logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
 		},
 	}
 

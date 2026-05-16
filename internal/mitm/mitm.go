@@ -39,10 +39,10 @@ var hopByHopHeaders = []string{
 // Interceptor terminates client TLS and forwards requests upstream with the
 // TLS fingerprint and headers of the configured profile.
 type Interceptor struct {
-	CA      *ca.Authority
-	Profile *profile.Profile
-	Dialer  *upstream.Dialer
-	Logger  *slog.Logger
+	CA        *ca.Authority
+	Profile   *profile.Profile
+	Transport *upstream.RoundTripper
+	Logger    *slog.Logger
 }
 
 // Intercept terminates TLS on clientConn (which the client opened believing
@@ -58,9 +58,7 @@ func (ic *Interceptor) Intercept(clientConn net.Conn, host string) {
 	}
 	defer tlsConn.Close()
 
-	rt := &upstream.RoundTripper{Dialer: ic.Dialer, Profile: ic.Profile}
 	reader := bufio.NewReader(tlsConn)
-
 	for {
 		req, err := http.ReadRequest(reader)
 		if err != nil {
@@ -69,16 +67,15 @@ func (ic *Interceptor) Intercept(clientConn net.Conn, host string) {
 			}
 			return
 		}
-		if err := ic.forward(tlsConn, req, host, rt); err != nil {
+		if err := ic.forward(tlsConn, req, host); err != nil {
 			ic.logger().Warn("request failed", "host", host, "error", err)
 			return
 		}
 	}
 }
 
-// forward re-issues req upstream through rt and writes the response back to
-// the client connection.
-func (ic *Interceptor) forward(client net.Conn, req *http.Request, host string, rt *upstream.RoundTripper) error {
+// forward re-issues req upstream and writes the response back to the client.
+func (ic *Interceptor) forward(client net.Conn, req *http.Request, host string) error {
 	authority := req.Host
 	if authority == "" {
 		authority = host
@@ -99,7 +96,7 @@ func (ic *Interceptor) forward(client net.Conn, req *http.Request, host string, 
 	// Rewrite identity-revealing headers so they match the profile.
 	ic.Profile.Apply(outReq)
 
-	resp, err := rt.RoundTrip(outReq)
+	resp, err := ic.Transport.RoundTrip(outReq)
 	if err != nil {
 		writeStatus(client, http.StatusBadGateway)
 		return fmt.Errorf("upstream round trip: %w", err)
