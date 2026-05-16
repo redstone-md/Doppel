@@ -1,0 +1,31 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+- Local certificate authority with on-demand, cached leaf-certificate minting.
+- Identity profiles with built-in iPhone, Android, Windows and macOS
+  fingerprints, plus support for user-supplied profiles.
+- uTLS-based upstream dialer that produces a per-profile JA3/JA4 fingerprint.
+- HTTP/1.1 and HTTP/2 round tripper, with per-host HTTP/2 connection pooling
+  and dead-peer detection.
+- Transparent decoding of gzip, brotli, zstd and deflate responses.
+- Single-port SOCKS5 and HTTP CONNECT proxy with protocol auto-detection and a
+  client-negotiation deadline.
+- TLS interception that re-originates requests through the chosen profile.
+- `doppel` command-line interface: `init`, `run`, `profiles`, `ca`, `verify`.
+- First-run setup wizard covering both OS and language-runtime trust stores.
+
+### Known limitations
+
+- The HTTP/2 fingerprint (Akamai: SETTINGS frame, header order) is the Go
+  runtime's, not the profile's. Exact control is planned.
+- The host kernel's TCP/IP fingerprint is not altered.
+
+[Unreleased]: https://github.com/Rxflex/doppel/commits/main
