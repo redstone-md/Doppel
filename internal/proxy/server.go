@@ -39,14 +39,18 @@ type peekConn struct {
 
 func (c *peekConn) Read(p []byte) (int, error) { return c.r.Read(p) }
 
-// ListenAndServe accepts connections until ctx is cancelled, then waits for
-// in-flight connections to finish.
+// ListenAndServe binds to s.Addr and serves until ctx is cancelled.
 func (s *Server) ListenAndServe(ctx context.Context) error {
 	ln, err := net.Listen("tcp", s.Addr)
 	if err != nil {
 		return fmt.Errorf("listen on %s: %w", s.Addr, err)
 	}
+	return s.Serve(ctx, ln)
+}
 
+// Serve accepts connections on ln until ctx is cancelled, then waits for
+// in-flight connections to finish. ln is closed on return.
+func (s *Server) Serve(ctx context.Context, ln net.Listener) error {
 	s.logger().Info("doppel listening",
 		"addr", ln.Addr().String(),
 		"profile", s.Interceptor.Profile.Name,
