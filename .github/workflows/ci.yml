@@ -14,7 +14,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          # The race detector needs a C toolchain via cgo. Linux and macOS
+          # runners always ship one; the Windows runner is tested without it.
+          - os: ubuntu-latest
+            race: "-race"
+          - os: macos-latest
+            race: "-race"
+          - os: windows-latest
+            race: ""
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +39,7 @@ jobs:
         run: go vet ./...
 
       - name: Test
-        run: go test -race -count=1 ./...
+        run: go test ${{ matrix.race }} -count=1 ./...
 
   lint:
     name: lint
