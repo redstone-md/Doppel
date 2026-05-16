@@ -1,0 +1,47 @@
+{
+  "name": "chrome-android",
+  "description": "Chrome 131 on Android 14 (Pixel 8)",
+  "client_hello": "chrome",
+  "user_agent": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+  "alpn": ["h2", "http/1.1"],
+  "headers": {
+    "order": [
+      "host",
+      "sec-ch-ua",
+      "sec-ch-ua-mobile",
+      "sec-ch-ua-platform",
+      "upgrade-insecure-requests",
+      "user-agent",
+      "accept",
+      "sec-fetch-site",
+      "sec-fetch-mode",
+      "sec-fetch-user",
+      "sec-fetch-dest",
+      "accept-encoding",
+      "accept-language"
+    ],
+    "set": {
+      "Sec-Ch-Ua": "\"Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+      "Sec-Ch-Ua-Mobile": "?1",
+      "Sec-Ch-Ua-Platform": "\"Android\"",
+      "Upgrade-Insecure-Requests": "1",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-User": "?1",
+      "Sec-Fetch-Dest": "document",
+      "Accept-Encoding": "gzip, deflate, br, zstd",
+      "Accept-Language": "en-US,en;q=0.9"
+    }
+  },
+  "http2": {
+    "settings": {
+      "HEADER_TABLE_SIZE": 65536,
+      "ENABLE_PUSH": 0,
+      "MAX_CONCURRENT_STREAMS": 1000,
+      "INITIAL_WINDOW_SIZE": 6291456,
+      "MAX_HEADER_LIST_SIZE": 262144
+    },
+    "pseudo_header_order": [":method", ":authority", ":scheme", ":path"]
+  }
+}

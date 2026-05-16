@@ -1,0 +1,31 @@
+{
+  "name": "safari-macos",
+  "description": "Safari 17 on macOS Sonoma",
+  "client_hello": "safari",
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+  "alpn": ["h2", "http/1.1"],
+  "headers": {
+    "order": [
+      "host",
+      "accept",
+      "accept-encoding",
+      "accept-language",
+      "user-agent",
+      "connection"
+    ],
+    "set": {
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br"
+    }
+  },
+  "http2": {
+    "settings": {
+      "HEADER_TABLE_SIZE": 4096,
+      "ENABLE_PUSH": 0,
+      "MAX_CONCURRENT_STREAMS": 100,
+      "INITIAL_WINDOW_SIZE": 2097152
+    },
+    "pseudo_header_order": [":method", ":scheme", ":path", ":authority"]
+  }
+}

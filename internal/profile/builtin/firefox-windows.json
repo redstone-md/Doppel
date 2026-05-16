@@ -1,0 +1,41 @@
+{
+  "name": "firefox-windows",
+  "description": "Firefox 133 on Windows 11 (x64)",
+  "client_hello": "firefox",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0",
+  "alpn": ["h2", "http/1.1"],
+  "headers": {
+    "order": [
+      "host",
+      "user-agent",
+      "accept",
+      "accept-language",
+      "accept-encoding",
+      "upgrade-insecure-requests",
+      "sec-fetch-dest",
+      "sec-fetch-mode",
+      "sec-fetch-site",
+      "sec-fetch-user",
+      "priority"
+    ],
+    "set": {
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate, br, zstd",
+      "Upgrade-Insecure-Requests": "1",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+      "Priority": "u=0, i"
+    }
+  },
+  "http2": {
+    "settings": {
+      "HEADER_TABLE_SIZE": 65536,
+      "INITIAL_WINDOW_SIZE": 131072,
+      "MAX_FRAME_SIZE": 16384
+    },
+    "pseudo_header_order": [":method", ":path", ":authority", ":scheme"]
+  }
+}
