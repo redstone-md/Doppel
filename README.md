@@ -186,6 +186,21 @@ with a built-in one overrides it.
 Supported `client_hello` templates: `chrome`, `firefox`, `safari`,
 `safari-ios`, `edge`, `randomized`.
 
+## Troubleshooting
+
+**curl on Windows fails with a certificate error.** A curl built against
+Schannel runs CRL/OCSP revocation checks that a private CA cannot satisfy.
+Pass `--ssl-no-revoke`. Clients built on OpenSSL (most Python and CLI
+tooling), BoringSSL (Node.js) or Go are unaffected.
+
+**`doppel verify` reports an HTTP/2 fingerprint that is not the profile's.**
+Expected: the upstream HTTP/2 layer is not yet fingerprint-controlled. The
+TLS (JA3/JA4) fingerprint *is* the profile's. See the [Roadmap](#roadmap).
+
+**A site still blocks the request.** Doppel changes the transport fingerprint
+only. If the site serves a JavaScript challenge or scores your egress IP, no
+TLS profile will help — see [What it does](#what-it-does--and-does-not--do).
+
 ## Architecture
 
 ```

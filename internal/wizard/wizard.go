@@ -28,6 +28,9 @@ func InstallGuide(certPath, fingerprint, proxyAddr string) string {
 
 	fmt.Fprintln(&b, "1. Trust the CA in the OS store")
 	fmt.Fprintln(&b, osTrustCommand(certPath))
+	if note := osTrustNote(); note != "" {
+		fmt.Fprintln(&b, note)
+	}
 	fmt.Fprintln(&b)
 
 	fmt.Fprintln(&b, "2. Trust the CA in language runtimes (they ignore the OS store)")
@@ -46,6 +49,17 @@ func InstallGuide(certPath, fingerprint, proxyAddr string) string {
 	fmt.Fprintf(&b, "   %s\n", certPath)
 
 	return b.String()
+}
+
+// osTrustNote returns a platform-specific caveat shown beneath the trust
+// command, or an empty string when there is nothing to add.
+func osTrustNote() string {
+	if runtime.GOOS == "windows" {
+		return "   Note: tools using Windows Schannel (curl, .NET) reject a private\n" +
+			"   CA during revocation checks. Disable revocation for them,\n" +
+			"   for example: curl --ssl-no-revoke. OpenSSL-based tools are fine."
+	}
+	return ""
 }
 
 // osTrustCommand returns the platform-specific command that adds the CA to
