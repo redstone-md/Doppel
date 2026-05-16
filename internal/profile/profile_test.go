@@ -62,9 +62,9 @@ func TestOrderHeaders(t *testing.T) {
 		Headers: HeaderProfile{Order: []string{"host", "user-agent", "accept"}},
 	}
 	h := http.Header{
-		"Accept":       {"*/*"},
-		"User-Agent":   {"ua"},
-		"X-Extra":      {"1"},
+		"Accept":        {"*/*"},
+		"User-Agent":    {"ua"},
+		"X-Extra":       {"1"},
 		"Authorization": {"token"},
 	}
 	got := p.OrderHeaders(h)

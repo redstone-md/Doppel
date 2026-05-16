@@ -24,9 +24,9 @@ func TestResolveClientHelloUnknown(t *testing.T) {
 
 func TestSplitHostPort(t *testing.T) {
 	cases := []struct {
-		in       string
-		host     string
-		port     string
+		in   string
+		host string
+		port string
 	}{
 		{"example.com", "example.com", "443"},
 		{"example.com:8443", "example.com", "8443"},
