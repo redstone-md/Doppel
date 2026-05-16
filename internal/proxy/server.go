@@ -14,9 +14,15 @@ import (
 	"log/slog"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/Rxflex/doppel/internal/mitm"
 )
+
+// handshakeTimeout bounds how long a client has to complete proxy negotiation
+// (the SOCKS5 handshake or HTTP CONNECT request). It stops a client that
+// connects and then goes silent from pinning a goroutine indefinitely.
+const handshakeTimeout = 30 * time.Second
 
 // Server listens for proxy clients and routes each connection to the
 // interceptor.
@@ -80,9 +86,16 @@ func (s *Server) Serve(ctx context.Context, ln net.Listener) error {
 	}
 }
 
-// handle detects the proxy protocol and dispatches the connection.
+// handle detects the proxy protocol and dispatches the connection. The
+// negotiation phase runs under a deadline; handlers clear it before handing
+// the connection to the interceptor for the long-lived TLS session.
 func (s *Server) handle(conn net.Conn) {
 	pc := &peekConn{Conn: conn, r: bufio.NewReader(conn)}
+
+	if err := conn.SetReadDeadline(time.Now().Add(handshakeTimeout)); err != nil {
+		_ = conn.Close()
+		return
+	}
 
 	first, err := pc.r.Peek(1)
 	if err != nil {

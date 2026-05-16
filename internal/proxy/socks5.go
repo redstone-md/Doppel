@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"time"
 )
 
 // SOCKS5 protocol constants (RFC 1928).
@@ -32,6 +33,10 @@ func (s *Server) handleSOCKS5(pc *peekConn) {
 		_ = pc.Close()
 		return
 	}
+
+	// Negotiation is complete; the long-lived TLS session must not inherit
+	// the handshake deadline.
+	_ = pc.SetReadDeadline(time.Time{})
 
 	// pc now carries the raw client TLS stream. Intercept takes ownership
 	// of the connection and closes it when done.
