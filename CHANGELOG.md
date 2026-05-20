@@ -28,4 +28,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   runtime's, not the profile's. Exact control is planned.
 - The host kernel's TCP/IP fingerprint is not altered.
 
-[Unreleased]: https://github.com/Rxflex/doppel/commits/main
+[Unreleased]: https://github.com/redstone-md/Doppel/commits/main

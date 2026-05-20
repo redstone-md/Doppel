@@ -1,4 +1,4 @@
-module github.com/Rxflex/doppel
+module github.com/redstone-md/Doppel
 
 go 1.25.0
 

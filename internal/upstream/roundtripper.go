@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/net/http2"
 
-	"github.com/Rxflex/doppel/internal/profile"
+	"github.com/redstone-md/Doppel/internal/profile"
 )
 
 const (

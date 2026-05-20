@@ -17,9 +17,9 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/Rxflex/doppel/internal/ca"
-	"github.com/Rxflex/doppel/internal/profile"
-	"github.com/Rxflex/doppel/internal/upstream"
+	"github.com/redstone-md/Doppel/internal/ca"
+	"github.com/redstone-md/Doppel/internal/profile"
+	"github.com/redstone-md/Doppel/internal/upstream"
 )
 
 // hopByHopHeaders are connection-scoped headers that must not be forwarded

@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Rxflex/doppel/internal/mitm"
+	"github.com/redstone-md/Doppel/internal/mitm"
 )
 
 // handshakeTimeout bounds how long a client has to complete proxy negotiation

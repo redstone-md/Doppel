@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Rxflex/doppel/internal/profile"
+	"github.com/redstone-md/Doppel/internal/profile"
 )
 
 func testProfile(t *testing.T) *profile.Profile {

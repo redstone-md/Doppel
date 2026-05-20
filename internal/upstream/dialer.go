@@ -8,7 +8,7 @@ import (
 
 	utls "github.com/refraction-networking/utls"
 
-	"github.com/Rxflex/doppel/internal/profile"
+	"github.com/redstone-md/Doppel/internal/profile"
 )
 
 const defaultTimeout = 30 * time.Second

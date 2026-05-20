@@ -25,7 +25,7 @@ genuine man-in-the-middle.
 ## Reporting a vulnerability
 
 Please report security issues privately rather than opening a public issue.
-Open a [GitHub security advisory](https://github.com/Rxflex/doppel/security/advisories/new)
+Open a [GitHub security advisory](https://github.com/redstone-md/Doppel/security/advisories/new)
 or contact the maintainers directly.
 
 Include the affected version, reproduction steps, and the impact you observed.

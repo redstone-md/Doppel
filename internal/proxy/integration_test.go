@@ -16,11 +16,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Rxflex/doppel/internal/ca"
-	"github.com/Rxflex/doppel/internal/mitm"
-	"github.com/Rxflex/doppel/internal/profile"
-	"github.com/Rxflex/doppel/internal/proxy"
-	"github.com/Rxflex/doppel/internal/upstream"
+	"github.com/redstone-md/Doppel/internal/ca"
+	"github.com/redstone-md/Doppel/internal/mitm"
+	"github.com/redstone-md/Doppel/internal/profile"
+	"github.com/redstone-md/Doppel/internal/proxy"
+	"github.com/redstone-md/Doppel/internal/upstream"
 )
 
 // fixture starts a TLS backend and a Doppel proxy in front of it, returning
