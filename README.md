@@ -73,7 +73,7 @@ trust Doppel's local CA certificate. The CA is generated on your machine by
 | TLS fingerprint, including JA3 / JA4 shape | Supported via uTLS |
 | Browser-like User-Agent and request headers | Supported |
 | HTTP/1.1 header order | Supported |
-| HTTP/2 connection fingerprint | Partial; Go's HTTP/2 stack is still visible |
+| HTTP/2 connection fingerprint | Supported for SETTINGS, initial WINDOW_UPDATE and header order |
 | TCP/IP stack fingerprint | Not supported; this is controlled by the host OS |
 | Browser JavaScript, DOM, canvas, WebGL, cookies | Not supported |
 | CAPTCHA or challenge solving | Not supported |
@@ -188,7 +188,7 @@ Useful flags:
 ## Built-in profiles
 
 A profile is a complete network identity: TLS ClientHello template, ALPN list,
-User-Agent, browser headers, header order, and planned HTTP/2 traits.
+User-Agent, browser headers, header order, HTTP/2 SETTINGS, initial WINDOW_UPDATE and pseudo-header ordering.
 
 | Name | Device identity |
 | --- | --- |
@@ -415,11 +415,6 @@ Doppel changes transport-level and header-level signals only. It cannot solve
 JavaScript challenges, repair IP reputation, execute browser APIs, or make
 unauthorised access acceptable.
 
-### `doppel verify` shows an unexpected HTTP/2 fingerprint
-
-Expected for now. TLS ClientHello selection is profile-controlled, but exact
-HTTP/2 SETTINGS and pseudo-header ordering are still on the roadmap.
-
 ## Architecture
 
 ```text
@@ -440,8 +435,7 @@ state.
 
 ## Roadmap
 
-- Exact HTTP/2 fingerprint control, including SETTINGS frames and pseudo-header
-  order.
+- Broader HTTP/2 browser parity, including priority frames and deeper HPACK tuning.
 - Version-pinned ClientHello specs for each built-in profile.
 - Realistic mutation within a profile's normal browser envelope.
 - Idle timeout controls for long-lived keep-alive client connections.

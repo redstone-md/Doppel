@@ -35,13 +35,13 @@
     }
   },
   "http2": {
-    "settings": {
-      "HEADER_TABLE_SIZE": 65536,
-      "ENABLE_PUSH": 0,
-      "MAX_CONCURRENT_STREAMS": 1000,
-      "INITIAL_WINDOW_SIZE": 6291456,
-      "MAX_HEADER_LIST_SIZE": 262144
-    },
+    "settings": [
+      { "name": "HEADER_TABLE_SIZE", "value": 65536 },
+      { "name": "ENABLE_PUSH", "value": 0 },
+      { "name": "INITIAL_WINDOW_SIZE", "value": 6291456 },
+      { "name": "MAX_HEADER_LIST_SIZE", "value": 262144 }
+    ],
+    "connection_window_update": 15663105,
     "pseudo_header_order": [":method", ":authority", ":scheme", ":path"]
   }
 }

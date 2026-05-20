@@ -8,6 +8,7 @@
 package profile
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -52,11 +53,64 @@ type HeaderProfile struct {
 
 // HTTP2Profile describes HTTP/2 connection traits.
 type HTTP2Profile struct {
-	// Settings holds HTTP/2 SETTINGS values keyed by setting name.
-	Settings map[string]uint32 `json:"settings,omitempty"`
+	// Settings lists HTTP/2 SETTINGS in the exact order the profile sends them.
+	Settings []HTTP2Setting `json:"settings,omitempty"`
+	// ConnectionWindowUpdate is the initial connection-level WINDOW_UPDATE
+	// increment sent after SETTINGS. Zero means no extra WINDOW_UPDATE.
+	ConnectionWindowUpdate uint32 `json:"connection_window_update,omitempty"`
 	// PseudoHeaderOrder lists the order of HTTP/2 pseudo-headers, which is
 	// distinctive per browser engine.
 	PseudoHeaderOrder []string `json:"pseudo_header_order,omitempty"`
+}
+
+// HTTP2Setting is one ordered HTTP/2 SETTINGS entry.
+type HTTP2Setting struct {
+	Name  string `json:"name"`
+	Value uint32 `json:"value"`
+}
+
+// UnmarshalJSON accepts both the current ordered settings array and the older
+// object form used by early profile files.
+func (h *HTTP2Profile) UnmarshalJSON(data []byte) error {
+	type rawHTTP2Profile struct {
+		Settings               json.RawMessage `json:"settings"`
+		ConnectionWindowUpdate uint32          `json:"connection_window_update,omitempty"`
+		PseudoHeaderOrder      []string        `json:"pseudo_header_order,omitempty"`
+	}
+	var raw rawHTTP2Profile
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	h.ConnectionWindowUpdate = raw.ConnectionWindowUpdate
+	h.PseudoHeaderOrder = raw.PseudoHeaderOrder
+	if len(raw.Settings) == 0 || bytes.Equal(raw.Settings, []byte("null")) {
+		return nil
+	}
+	if bytes.HasPrefix(bytes.TrimSpace(raw.Settings), []byte("[")) {
+		return json.Unmarshal(raw.Settings, &h.Settings)
+	}
+	var legacy map[string]uint32
+	if err := json.Unmarshal(raw.Settings, &legacy); err != nil {
+		return err
+	}
+	order := []string{
+		"HEADER_TABLE_SIZE",
+		"ENABLE_PUSH",
+		"MAX_CONCURRENT_STREAMS",
+		"INITIAL_WINDOW_SIZE",
+		"MAX_FRAME_SIZE",
+		"MAX_HEADER_LIST_SIZE",
+	}
+	for _, name := range order {
+		if value, ok := legacy[name]; ok {
+			h.Settings = append(h.Settings, HTTP2Setting{Name: name, Value: value})
+			delete(legacy, name)
+		}
+	}
+	for name, value := range legacy {
+		h.Settings = append(h.Settings, HTTP2Setting{Name: name, Value: value})
+	}
+	return nil
 }
 
 // Validate reports whether the profile is internally consistent.

@@ -103,6 +103,39 @@ func TestRoundTripperPoolsHTTP2(t *testing.T) {
 	}
 }
 
+func TestRoundTripperConcurrentHTTP2(t *testing.T) {
+	backend := httptest.NewUnstartedServer(echoHandler())
+	backend.EnableHTTP2 = true
+	backend.StartTLS()
+	defer backend.Close()
+
+	rt := &RoundTripper{Dialer: &Dialer{SkipVerify: true}, Profile: testProfile(t)}
+	defer rt.Close()
+
+	const requests = 12
+	errs := make(chan error, requests)
+	for i := 0; i < requests; i++ {
+		go func(i int) {
+			req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/concurrent%d", backend.URL, i), nil)
+			resp, err := rt.RoundTrip(req)
+			if err != nil {
+				errs <- err
+				return
+			}
+			if resp.ProtoMajor != 2 {
+				errs <- fmt.Errorf("ProtoMajor = %d, want 2", resp.ProtoMajor)
+				return
+			}
+			drain(t, resp)
+			errs <- nil
+		}(i)
+	}
+	for i := 0; i < requests; i++ {
+		if err := <-errs; err != nil {
+			t.Fatal(err)
+		}
+	}
+}
 func TestRoundTripperCloseEmptiesPool(t *testing.T) {
 	backend := httptest.NewUnstartedServer(echoHandler())
 	backend.EnableHTTP2 = true

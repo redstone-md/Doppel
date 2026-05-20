@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Identity profiles with built-in iPhone, Android, Windows and macOS
   fingerprints, plus support for user-supplied profiles.
 - uTLS-based upstream dialer that produces a per-profile JA3/JA4 fingerprint.
-- HTTP/1.1 and HTTP/2 round tripper, with per-host HTTP/2 connection pooling
-  and dead-peer detection.
+- HTTP/1.1 round tripper and a profile-controlled HTTP/2 client with per-host
+  connection pooling.
 - Transparent decoding of gzip, brotli, zstd and deflate responses.
 - Single-port SOCKS5 and HTTP CONNECT proxy with protocol auto-detection and a
   client-negotiation deadline.
@@ -25,11 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Application launcher mode for running HTTPS clients and Electron apps through
   Doppel without proxychains.
 - Upstream SOCKS5 proxy support for `run`, `launch`, and `verify`.
+- Profile-controlled HTTP/2 SETTINGS, initial WINDOW_UPDATE and header ordering.
 
 ### Known limitations
 
-- The HTTP/2 fingerprint (Akamai: SETTINGS frame, header order) is the Go
-  runtime's, not the profile's. Exact control is planned.
 - The host kernel's TCP/IP fingerprint is not altered.
 
 [Unreleased]: https://github.com/redstone-md/Doppel/commits/main

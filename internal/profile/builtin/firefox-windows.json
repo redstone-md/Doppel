@@ -31,11 +31,12 @@
     }
   },
   "http2": {
-    "settings": {
-      "HEADER_TABLE_SIZE": 65536,
-      "INITIAL_WINDOW_SIZE": 131072,
-      "MAX_FRAME_SIZE": 16384
-    },
+    "settings": [
+      { "name": "HEADER_TABLE_SIZE", "value": 65536 },
+      { "name": "INITIAL_WINDOW_SIZE", "value": 131072 },
+      { "name": "MAX_FRAME_SIZE", "value": 16384 }
+    ],
+    "connection_window_update": 12517377,
     "pseudo_header_order": [":method", ":path", ":authority", ":scheme"]
   }
 }
