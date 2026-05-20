@@ -9,13 +9,16 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"sort"
+	"time"
 
 	"github.com/redstone-md/Doppel/internal/ca"
 	"github.com/redstone-md/Doppel/internal/config"
+	"github.com/redstone-md/Doppel/internal/launch"
 	"github.com/redstone-md/Doppel/internal/mitm"
 	"github.com/redstone-md/Doppel/internal/profile"
 	"github.com/redstone-md/Doppel/internal/proxy"
@@ -38,6 +41,8 @@ func main() {
 		err = cmdInit(os.Args[2:])
 	case "run":
 		err = cmdRun(os.Args[2:])
+	case "launch":
+		err = cmdLaunch(os.Args[2:])
 	case "profiles":
 		err = cmdProfiles(os.Args[2:])
 	case "ca":
@@ -150,6 +155,104 @@ func cmdRun(args []string) error {
 
 	logger.Info("starting doppel", "version", version, "profile", selected.Name)
 	return server.ListenAndServe(ctx)
+}
+
+// cmdLaunch starts the proxy, launches a child application configured to use it,
+// and stops the proxy when the child exits.
+func cmdLaunch(args []string) error {
+	cfg, err := config.Default()
+	if err != nil {
+		return err
+	}
+	fs := flag.NewFlagSet("launch", flag.ExitOnError)
+	addr := fs.String("addr", cfg.Addr, "proxy listen address")
+	profileName := fs.String("profile", cfg.Profile, "identity profile to emulate")
+	dataDir := fs.String("data", cfg.DataDir, "data directory")
+	verbose := fs.Bool("v", false, "verbose (debug) logging")
+	insecure := fs.Bool("insecure", false, "skip upstream certificate verification (debugging only)")
+	includeEnv := fs.Bool("env", true, "set HTTPS proxy and CA environment variables for the child")
+	electron := fs.Bool("electron", false, "append Chromium/Electron proxy command-line switches")
+	allSchemes := fs.Bool("all-schemes", false, "with -electron, proxy every Chromium URL scheme instead of HTTPS only")
+	bypass := fs.String("bypass", "<local>", "Chromium proxy bypass list used with -electron")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	argv := fs.Args()
+	if len(argv) == 0 {
+		return fmt.Errorf("usage: doppel launch [flags] -- <command> [args...]")
+	}
+	cfg.DataDir, cfg.Addr, cfg.Profile = *dataDir, *addr, *profileName
+
+	logger := newLogger(*verbose)
+
+	if !cfg.CAExists() {
+		return fmt.Errorf("no CA found in %s; run 'doppel init' first", cfg.DataDir)
+	}
+	authority, err := ca.Load(cfg.CACertPath(), cfg.CAKeyPath())
+	if err != nil {
+		return err
+	}
+
+	selected, err := loadProfile(cfg, cfg.Profile)
+	if err != nil {
+		return err
+	}
+
+	transport := &upstream.RoundTripper{
+		Dialer:  &upstream.Dialer{SkipVerify: *insecure},
+		Profile: selected,
+	}
+	defer transport.Close()
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	ln, err := net.Listen("tcp", cfg.Addr)
+	if err != nil {
+		return fmt.Errorf("listen on %s: %w", cfg.Addr, err)
+	}
+
+	server := &proxy.Server{
+		Addr:   cfg.Addr,
+		Logger: logger,
+		Interceptor: &mitm.Interceptor{
+			CA:        authority,
+			Profile:   selected,
+			Transport: transport,
+			Logger:    logger,
+		},
+	}
+
+	serveErr := make(chan error, 1)
+	go func() { serveErr <- server.Serve(ctx, ln) }()
+
+	proxyAddr := ln.Addr().String()
+	cmd, err := launch.Command(ctx, launch.Options{
+		ProxyAddr:       proxyAddr,
+		CACertPath:      cfg.CACertPath(),
+		IncludeEnv:      *includeEnv,
+		IncludeChromium: *electron,
+		ProxyAllSchemes: *allSchemes,
+		BypassList:      *bypass,
+	}, argv)
+	if err != nil {
+		stop()
+		return err
+	}
+
+	logger.Info("launching app", "profile", selected.Name, "proxy", proxyAddr, "command", argv[0])
+	runErr := cmd.Run()
+	stop()
+
+	select {
+	case err := <-serveErr:
+		if runErr == nil && err != nil {
+			return err
+		}
+	case <-time.After(5 * time.Second):
+		logger.Warn("proxy shutdown timed out; exiting with child status")
+	}
+	return runErr
 }
 
 // cmdProfiles lists every available identity profile.
@@ -320,6 +423,7 @@ Usage:
 Commands:
   init       Generate the local CA and print setup instructions
   run        Start the proxy
+  launch     Start the proxy and run an application through it
   profiles   List available identity profiles
   ca         Show or export the local CA certificate
   verify     Check the emulated TLS fingerprint against a remote service

@@ -160,6 +160,7 @@ protocol: HTTP/2.0
 | --- | --- |
 | `doppel init` | Generate or reuse the local CA and print setup guidance |
 | `doppel run` | Start the local proxy |
+| `doppel launch` | Start Doppel and run one application through it |
 | `doppel profiles` | List built-in and user-supplied identity profiles |
 | `doppel ca` | Show or export the local CA certificate |
 | `doppel verify` | Check the selected profile against a remote endpoint |
@@ -171,13 +172,14 @@ Useful flags:
 
 | Flag | Commands | Purpose |
 | --- | --- | --- |
-| `--profile <name>` | `run`, `verify` | Select the identity profile |
-| `--addr <host:port>` | `init`, `run` | Change the proxy address; default is `127.0.0.1:8080` |
-| `--data <path>` | `init`, `run`, `profiles`, `ca`, `verify` | Use a custom data directory |
+| `--profile <name>` | `run`, `launch`, `verify` | Select the identity profile |
+| `--addr <host:port>` | `init`, `run`, `launch` | Change the proxy address; default is `127.0.0.1:8080` |
+| `--data <path>` | `init`, `run`, `launch`, `profiles`, `ca`, `verify` | Use a custom data directory |
 | `--force` | `init` | Regenerate the local CA |
 | `--export <path>` | `ca` | Write the CA certificate to a file |
-| `--insecure` | `run` | Skip upstream certificate verification for debugging only |
-| `-v` | `run` | Enable debug logging |
+| `--insecure` | `run`, `launch` | Skip upstream certificate verification for debugging only |
+| `-v` | `run`, `launch` | Enable debug logging |
+| `--electron` | `launch` | Add Chromium/Electron proxy switches to the child process |
 
 ## Built-in profiles
 
@@ -228,6 +230,26 @@ Supported `client_hello` templates are `chrome`, `firefox`, `safari`,
 `safari-ios`, `edge`, and `randomized`.
 
 ## Usage examples
+
+### Launch an app through Doppel
+
+`doppel launch` starts a temporary Doppel proxy, launches one child process with
+HTTPS proxy environment variables, and stops the proxy when the child exits:
+
+```sh
+doppel launch --profile chrome-windows -- curl https://example.com
+```
+
+For Electron or Chromium-based desktop apps, add `--electron`. Doppel appends
+Chromium proxy switches so the app does not need proxychains or LD_PRELOAD:
+
+```sh
+doppel launch --profile chrome-windows --electron -- /path/to/electron-app
+```
+
+By default the Chromium switch proxies HTTPS URLs only, because Doppel expects a
+TLS stream after CONNECT. See [Launching applications](docs/LAUNCHING_APPS.md)
+for Windows, macOS, Linux, and Electron notes.
 
 ### curl
 

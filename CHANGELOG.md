@@ -19,8 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Single-port SOCKS5 and HTTP CONNECT proxy with protocol auto-detection and a
   client-negotiation deadline.
 - TLS interception that re-originates requests through the chosen profile.
-- `doppel` command-line interface: `init`, `run`, `profiles`, `ca`, `verify`.
+- `doppel` command-line interface: `init`, `run`, `launch`, `profiles`,
+  `ca`, `verify`.
 - First-run setup wizard covering both OS and language-runtime trust stores.
+- Application launcher mode for running HTTPS clients and Electron apps through
+  Doppel without proxychains.
 
 ### Known limitations
 
