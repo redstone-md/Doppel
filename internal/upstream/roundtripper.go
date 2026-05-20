@@ -148,7 +148,7 @@ func (rt *RoundTripper) evict(host string) {
 // roundTripHTTP1 performs a single request over an HTTP/1.1 connection, which
 // is closed once the response body is closed.
 func roundTripHTTP1(conn *Conn, req *http.Request, p *profile.Profile) (*http.Response, error) {
-	if err := writeRequestHTTP1(conn, req, p); err != nil {
+	if err := WriteRequestHTTP1(conn, req, p); err != nil {
 		_ = conn.Close()
 		return nil, err
 	}
@@ -162,11 +162,11 @@ func roundTripHTTP1(conn *Conn, req *http.Request, p *profile.Profile) (*http.Re
 	return resp, nil
 }
 
-// writeRequestHTTP1 serialises req over an HTTP/1.1 connection with header
+// WriteRequestHTTP1 serialises req over an HTTP/1.1 connection with header
 // names emitted in the order dictated by the profile. Writing the request by
 // hand (rather than via http.Request.Write) is what gives Doppel control over
 // HTTP/1.1 header order.
-func writeRequestHTTP1(w io.Writer, req *http.Request, p *profile.Profile) error {
+func WriteRequestHTTP1(w io.Writer, req *http.Request, p *profile.Profile) error {
 	host := req.Host
 	if host == "" {
 		host = req.URL.Host
@@ -179,7 +179,8 @@ func writeRequestHTTP1(w io.Writer, req *http.Request, p *profile.Profile) error
 	headers.Set("Host", host)
 
 	var body []byte
-	if req.Body != nil {
+	hasBody := req.Body != nil && req.Body != http.NoBody
+	if hasBody {
 		var err error
 		body, err = io.ReadAll(req.Body)
 		_ = req.Body.Close()
@@ -187,7 +188,7 @@ func writeRequestHTTP1(w io.Writer, req *http.Request, p *profile.Profile) error
 			return fmt.Errorf("read request body: %w", err)
 		}
 	}
-	if req.Body != nil || req.Method == http.MethodPost || req.Method == http.MethodPut {
+	if hasBody || req.Method == http.MethodPost || req.Method == http.MethodPut {
 		headers.Set("Content-Length", strconv.Itoa(len(body)))
 	}
 

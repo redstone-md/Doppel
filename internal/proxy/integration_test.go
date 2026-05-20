@@ -206,3 +206,124 @@ func TestHTTPConnectInterception(t *testing.T) {
 		t.Errorf("body = %q, want %q", got, "hello via connect")
 	}
 }
+
+func TestWebSocketUpgradeTunnel(t *testing.T) {
+	backend := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Upgrade") != "websocket" {
+			t.Errorf("Upgrade = %q, want websocket", r.Header.Get("Upgrade"))
+		}
+		if r.Header.Get("Content-Length") != "" {
+			t.Errorf("Content-Length = %q, want absent", r.Header.Get("Content-Length"))
+		}
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Fatal("response writer does not support hijack")
+		}
+		conn, rw, err := hj.Hijack()
+		if err != nil {
+			t.Errorf("hijack: %v", err)
+			return
+		}
+		defer conn.Close()
+		fmt.Fprintf(rw, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: test\r\n\r\n")
+		if err := rw.Flush(); err != nil {
+			t.Errorf("flush upgrade: %v", err)
+			return
+		}
+		line, err := rw.ReadString('\n')
+		if err != nil {
+			t.Errorf("read tunneled data: %v", err)
+			return
+		}
+		fmt.Fprintf(rw, "echo:%s", line)
+		if err := rw.Flush(); err != nil {
+			t.Errorf("flush tunneled data: %v", err)
+		}
+	}))
+	defer backend.Close()
+
+	backendURL, err := url.Parse(backend.URL)
+	if err != nil {
+		t.Fatalf("parse backend URL: %v", err)
+	}
+	authority, err := ca.Generate()
+	if err != nil {
+		t.Fatalf("generate CA: %v", err)
+	}
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(authority.CertificatePEM()) {
+		t.Fatal("add CA certificate to pool")
+	}
+	profiles, err := profile.Builtin()
+	if err != nil {
+		t.Fatalf("load builtin profiles: %v", err)
+	}
+	transport := &upstream.RoundTripper{Dialer: &upstream.Dialer{SkipVerify: true}, Profile: profiles["chrome-win11"]}
+	defer transport.Close()
+	server := &proxy.Server{
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Interceptor: &mitm.Interceptor{
+			CA:        authority,
+			Profile:   profiles["chrome-win11"],
+			Transport: transport,
+			Logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
+		},
+	}
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = server.Serve(ctx, ln) }()
+
+	conn, err := net.Dial("tcp", ln.Addr().String())
+	if err != nil {
+		t.Fatalf("dial proxy: %v", err)
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
+	fmt.Fprintf(conn, "CONNECT %s HTTP/1.1\r\nHost: %s\r\n\r\n", backendURL.Host, backendURL.Host)
+	proxyReader := bufio.NewReader(conn)
+	status, err := proxyReader.ReadString('\n')
+	if err != nil {
+		t.Fatalf("read CONNECT status: %v", err)
+	}
+	if status != "HTTP/1.1 200 Connection Established\r\n" {
+		t.Fatalf("CONNECT status = %q", status)
+	}
+	for {
+		line, err := proxyReader.ReadString('\n')
+		if err != nil {
+			t.Fatalf("read CONNECT headers: %v", err)
+		}
+		if line == "\r\n" {
+			break
+		}
+	}
+
+	host, _, _ := net.SplitHostPort(backendURL.Host)
+	tlsConn := tls.Client(conn, &tls.Config{RootCAs: pool, ServerName: host})
+	if err := tlsConn.Handshake(); err != nil {
+		t.Fatalf("client TLS handshake through proxy: %v", err)
+	}
+	reader := bufio.NewReader(tlsConn)
+	fmt.Fprintf(tlsConn, "GET /ws HTTP/1.1\r\nHost: %s\r\nConnection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n", backendURL.Host)
+	resp, err := http.ReadResponse(reader, &http.Request{Method: http.MethodGet})
+	if err != nil {
+		t.Fatalf("read upgrade response: %v", err)
+	}
+	if resp.StatusCode != http.StatusSwitchingProtocols {
+		t.Fatalf("status = %d, want 101", resp.StatusCode)
+	}
+	if _, err := io.WriteString(tlsConn, "ping\n"); err != nil {
+		t.Fatalf("write tunneled data: %v", err)
+	}
+	got, err := reader.ReadString('\n')
+	if err != nil {
+		t.Fatalf("read tunneled data: %v", err)
+	}
+	if got != "echo:ping\n" {
+		t.Fatalf("echo = %q, want echo:ping", got)
+	}
+}

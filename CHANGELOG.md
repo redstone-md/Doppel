@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Local client aborts on Windows, including `wsasend` disconnects from
   Chromium/Electron apps, are now logged as debug-level disconnects instead of
   warning-level request failures.
+- WebSocket upgrade requests from Electron/Chromium apps are forwarded through
+  an HTTP/1.1 upstream tunnel instead of being rewritten as ordinary HTTP/2
+  requests.
 
 ### Known limitations
 

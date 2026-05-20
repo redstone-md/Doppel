@@ -38,6 +38,12 @@ type Dialer struct {
 // Dial connects to host (host:port, defaulting to port 443) and performs a
 // TLS handshake using the profile's ClientHello template.
 func (d *Dialer) Dial(ctx context.Context, p *profile.Profile, host string) (*Conn, error) {
+	return d.DialWithALPN(ctx, p, host, p.ALPN)
+}
+
+// DialWithALPN is Dial with an explicit ALPN list. It is used for protocol
+// paths such as WebSocket upgrade where HTTP/1.1 must be negotiated upstream.
+func (d *Dialer) DialWithALPN(ctx context.Context, p *profile.Profile, host string, alpn []string) (*Conn, error) {
 	helloID, err := resolveClientHello(p.ClientHello)
 	if err != nil {
 		return nil, err
@@ -59,6 +65,7 @@ func (d *Dialer) Dial(ctx context.Context, p *profile.Profile, host string) (*Co
 	cfg := &utls.Config{
 		ServerName:         hostname,
 		InsecureSkipVerify: d.SkipVerify,
+		NextProtos:         alpn,
 	}
 	uconn := utls.UClient(raw, cfg, helloID)
 

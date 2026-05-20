@@ -1,11 +1,14 @@
 package mitm
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net"
 	"strings"
 )
+
+var errConnectionTakenOver = errors.New("connection taken over")
 
 func isClientAbort(err error) bool {
 	if err == nil {
@@ -28,4 +31,8 @@ func isClientAbort(err error) bool {
 		}
 	}
 	return false
+}
+
+func isConnectionTakenOver(err error) bool {
+	return errors.Is(err, errConnectionTakenOver) || errors.Is(err, context.Canceled)
 }
