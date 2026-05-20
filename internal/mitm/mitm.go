@@ -68,6 +68,10 @@ func (ic *Interceptor) Intercept(clientConn net.Conn, host string) {
 			return
 		}
 		if err := ic.forward(tlsConn, req, host); err != nil {
+			if isClientAbort(err) {
+				ic.logger().Debug("client closed response stream", "host", host, "error", err)
+				return
+			}
 			ic.logger().Warn("request failed", "host", host, "error", err)
 			return
 		}
