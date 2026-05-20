@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First-run setup wizard covering both OS and language-runtime trust stores.
 - Application launcher mode for running HTTPS clients and Electron apps through
   Doppel without proxychains.
+- Upstream SOCKS5 proxy support for `run`, `launch`, and `verify`.
 
 ### Known limitations
 

@@ -178,6 +178,7 @@ Useful flags:
 | `--force` | `init` | Regenerate the local CA |
 | `--export <path>` | `ca` | Write the CA certificate to a file |
 | `--insecure` | `run`, `launch` | Skip upstream certificate verification for debugging only |
+| `--upstream-proxy <url>` | `run`, `launch`, `verify` | Route Doppel egress through a SOCKS5 proxy |
 | `-v` | `run`, `launch` | Enable debug logging |
 | `--electron` | `launch` | Add Chromium/Electron proxy switches to the child process |
 
@@ -230,6 +231,17 @@ Supported `client_hello` templates are `chrome`, `firefox`, `safari`,
 `safari-ios`, `edge`, and `randomized`.
 
 ## Usage examples
+
+### Route Doppel through an upstream SOCKS5 proxy
+
+Use `--upstream-proxy` when Doppel itself should egress through another proxy:
+
+```sh
+doppel verify --upstream-proxy socks5://user:pass@proxy.example:1080
+```
+
+The same value can be supplied with `DOPPEL_UPSTREAM_PROXY` for `run`, `launch`,
+and `verify`. Provider-style `socks5://host:port:user:pass` URLs are accepted.
 
 ### Launch an app through Doppel
 

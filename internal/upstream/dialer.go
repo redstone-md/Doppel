@@ -30,6 +30,9 @@ type Dialer struct {
 	// It must remain false outside of debugging: skipping verification
 	// would let an attacker between Doppel and the server go unnoticed.
 	SkipVerify bool
+	// UpstreamProxy routes Doppel's outbound TCP connection through a proxy.
+	// Nil means direct egress.
+	UpstreamProxy *ProxyConfig
 }
 
 // Dial connects to host (host:port, defaulting to port 443) and performs a
@@ -47,8 +50,8 @@ func (d *Dialer) Dial(ctx context.Context, p *profile.Profile, host string) (*Co
 		timeout = defaultTimeout
 	}
 
-	tcpDialer := &net.Dialer{Timeout: timeout}
-	raw, err := tcpDialer.DialContext(ctx, "tcp", net.JoinHostPort(hostname, port))
+	target := net.JoinHostPort(hostname, port)
+	raw, err := d.dialTCP(ctx, target, timeout)
 	if err != nil {
 		return nil, fmt.Errorf("dial %s: %w", host, err)
 	}
@@ -78,6 +81,14 @@ func (d *Dialer) Dial(ctx context.Context, p *profile.Profile, host string) (*Co
 	}
 
 	return &Conn{Conn: uconn, ALPN: uconn.ConnectionState().NegotiatedProtocol}, nil
+}
+
+func (d *Dialer) dialTCP(ctx context.Context, target string, timeout time.Duration) (net.Conn, error) {
+	if d.UpstreamProxy != nil {
+		return d.UpstreamProxy.Dial(ctx, "tcp", target, timeout)
+	}
+	tcpDialer := &net.Dialer{Timeout: timeout}
+	return tcpDialer.DialContext(ctx, "tcp", target)
 }
 
 func splitHostPort(host string) (hostname, port string) {

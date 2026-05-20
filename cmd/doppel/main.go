@@ -113,6 +113,7 @@ func cmdRun(args []string) error {
 	dataDir := fs.String("data", cfg.DataDir, "data directory")
 	verbose := fs.Bool("v", false, "verbose (debug) logging")
 	insecure := fs.Bool("insecure", false, "skip upstream certificate verification (debugging only)")
+	upstreamProxyURL := fs.String("upstream-proxy", os.Getenv("DOPPEL_UPSTREAM_PROXY"), "upstream SOCKS5 proxy URL")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -132,9 +133,13 @@ func cmdRun(args []string) error {
 	if err != nil {
 		return err
 	}
+	upstreamProxy, err := upstream.ParseProxy(*upstreamProxyURL)
+	if err != nil {
+		return err
+	}
 
 	transport := &upstream.RoundTripper{
-		Dialer:  &upstream.Dialer{SkipVerify: *insecure},
+		Dialer:  &upstream.Dialer{SkipVerify: *insecure, UpstreamProxy: upstreamProxy},
 		Profile: selected,
 	}
 	defer transport.Close()
@@ -170,6 +175,7 @@ func cmdLaunch(args []string) error {
 	dataDir := fs.String("data", cfg.DataDir, "data directory")
 	verbose := fs.Bool("v", false, "verbose (debug) logging")
 	insecure := fs.Bool("insecure", false, "skip upstream certificate verification (debugging only)")
+	upstreamProxyURL := fs.String("upstream-proxy", os.Getenv("DOPPEL_UPSTREAM_PROXY"), "upstream SOCKS5 proxy URL")
 	includeEnv := fs.Bool("env", true, "set HTTPS proxy and CA environment variables for the child")
 	electron := fs.Bool("electron", false, "append Chromium/Electron proxy command-line switches")
 	allSchemes := fs.Bool("all-schemes", false, "with -electron, proxy every Chromium URL scheme instead of HTTPS only")
@@ -197,9 +203,13 @@ func cmdLaunch(args []string) error {
 	if err != nil {
 		return err
 	}
+	upstreamProxy, err := upstream.ParseProxy(*upstreamProxyURL)
+	if err != nil {
+		return err
+	}
 
 	transport := &upstream.RoundTripper{
-		Dialer:  &upstream.Dialer{SkipVerify: *insecure},
+		Dialer:  &upstream.Dialer{SkipVerify: *insecure, UpstreamProxy: upstreamProxy},
 		Profile: selected,
 	}
 	defer transport.Close()
@@ -330,6 +340,7 @@ func cmdVerify(args []string) error {
 	profileName := fs.String("profile", cfg.Profile, "identity profile to test")
 	url := fs.String("url", "https://get.ja3.zone/", "fingerprint-reporting endpoint")
 	dataDir := fs.String("data", cfg.DataDir, "data directory")
+	upstreamProxyURL := fs.String("upstream-proxy", os.Getenv("DOPPEL_UPSTREAM_PROXY"), "upstream SOCKS5 proxy URL")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -339,8 +350,12 @@ func cmdVerify(args []string) error {
 	if err != nil {
 		return err
 	}
+	upstreamProxy, err := upstream.ParseProxy(*upstreamProxyURL)
+	if err != nil {
+		return err
+	}
 
-	rt := &upstream.RoundTripper{Dialer: &upstream.Dialer{}, Profile: selected}
+	rt := &upstream.RoundTripper{Dialer: &upstream.Dialer{UpstreamProxy: upstreamProxy}, Profile: selected}
 	defer rt.Close()
 
 	req, err := http.NewRequest(http.MethodGet, *url, nil)

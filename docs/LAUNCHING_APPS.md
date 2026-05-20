@@ -48,6 +48,19 @@ child environment. Doppel is a TLS identity proxy and expects CONNECT/SOCKS5
 followed by a TLS stream. Plain HTTP forwarding is not part of the current
 design.
 
+## Upstream SOCKS5 egress
+
+`doppel launch` can also route Doppel's outbound side through a SOCKS5 proxy:
+
+```sh
+doppel launch --upstream-proxy socks5://user:pass@proxy.example:1080 -- \
+  curl https://example.com
+```
+
+The child application still talks only to local Doppel. The upstream proxy URL
+is consumed by Doppel and should be provided through a secret manager or
+short-lived environment variable in automation.
+
 ## Electron and Chromium apps
 
 Electron applications are Chromium-based, so environment variables are often
