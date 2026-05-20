@@ -23,6 +23,9 @@ import (
 type Profile struct {
 	// Name uniquely identifies the profile.
 	Name string `json:"name"`
+	// Aliases are alternate names accepted by the CLI for compatibility or
+	// shorter selection. Aliases are not canonical profile names.
+	Aliases []string `json:"aliases,omitempty"`
 	// Description is a human-readable summary of the emulated device.
 	Description string `json:"description"`
 	// ClientHello names the TLS ClientHello template to emulate. The
@@ -118,6 +121,17 @@ func (p *Profile) Validate() error {
 	if strings.TrimSpace(p.Name) == "" {
 		return errors.New("profile: name is required")
 	}
+	seenAliases := map[string]struct{}{strings.TrimSpace(p.Name): {}}
+	for _, alias := range p.Aliases {
+		alias = strings.TrimSpace(alias)
+		if alias == "" {
+			return fmt.Errorf("profile %q: aliases must not be empty", p.Name)
+		}
+		if _, dup := seenAliases[alias]; dup {
+			return fmt.Errorf("profile %q: duplicate alias %q", p.Name, alias)
+		}
+		seenAliases[alias] = struct{}{}
+	}
 	if strings.TrimSpace(p.ClientHello) == "" {
 		return fmt.Errorf("profile %q: client_hello is required", p.Name)
 	}
@@ -197,12 +211,22 @@ func LoadDir(dir string) (map[string]*Profile, error) {
 		if err != nil {
 			return nil, err
 		}
-		if _, dup := out[p.Name]; dup {
-			return nil, fmt.Errorf("duplicate profile name %q", p.Name)
+		if err := registerProfile(out, p); err != nil {
+			return nil, err
 		}
-		out[p.Name] = p
 	}
 	return out, nil
+}
+
+func registerProfile(out map[string]*Profile, p *Profile) error {
+	for _, name := range append([]string{p.Name}, p.Aliases...) {
+		name = strings.TrimSpace(name)
+		if _, dup := out[name]; dup {
+			return fmt.Errorf("duplicate profile name or alias %q", name)
+		}
+		out[name] = p
+	}
+	return nil
 }
 
 func parse(data []byte) (*Profile, error) {

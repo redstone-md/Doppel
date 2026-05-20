@@ -26,6 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Doppel without proxychains.
 - Upstream SOCKS5 proxy support for `run`, `launch`, and `verify`.
 - Profile-controlled HTTP/2 SETTINGS, initial WINDOW_UPDATE and header ordering.
+- Expanded built-in profile set with clearer Windows 10/11, Edge, Android,
+  macOS, and iOS profile names plus compatibility aliases for older names.
+
+### Fixed
+
+- Local client aborts on Windows, including `wsasend` disconnects from
+  Chromium/Electron apps, are now logged as debug-level disconnects instead of
+  warning-level request failures.
 
 ### Known limitations
 

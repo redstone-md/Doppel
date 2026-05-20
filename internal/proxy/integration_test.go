@@ -62,7 +62,7 @@ func newFixture(t *testing.T, body string) fixture {
 	// verification is disabled for this test only.
 	transport := &upstream.RoundTripper{
 		Dialer:  &upstream.Dialer{SkipVerify: true},
-		Profile: profiles["chrome-windows"],
+		Profile: profiles["chrome-win11"],
 	}
 	t.Cleanup(func() { _ = transport.Close() })
 
@@ -70,7 +70,7 @@ func newFixture(t *testing.T, body string) fixture {
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Interceptor: &mitm.Interceptor{
 			CA:        authority,
-			Profile:   profiles["chrome-windows"],
+			Profile:   profiles["chrome-win11"],
 			Transport: transport,
 			Logger:    slog.New(slog.NewTextHandler(io.Discard, nil)),
 		},

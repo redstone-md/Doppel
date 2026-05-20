@@ -32,7 +32,7 @@ doppel init
 Start the proxy:
 
 ```sh
-doppel run --profile iphone15-safari
+doppel run --profile safari-ios-iphone15
 ```
 
 Point an HTTPS client at Doppel:
@@ -44,13 +44,13 @@ HTTPS_PROXY=http://127.0.0.1:8080 curl https://example.com
 Run one app through Doppel without changing global proxy settings:
 
 ```sh
-doppel launch --profile chrome-windows -- curl https://example.com
+doppel launch --profile chrome-win11 -- curl https://example.com
 ```
 
 Electron or Chromium apps:
 
 ```sh
-doppel launch --profile chrome-windows --electron -- /path/to/app
+doppel launch --profile chrome-win11 --electron -- /path/to/app
 ```
 
 Optional upstream SOCKS5 egress:

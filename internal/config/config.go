@@ -14,7 +14,7 @@ const (
 	DefaultAddr = "127.0.0.1:8080"
 
 	// DefaultProfile is the identity profile used when none is selected.
-	DefaultProfile = "iphone15-safari"
+	DefaultProfile = "safari-ios-iphone15"
 )
 
 // Config holds resolved runtime settings.

@@ -30,7 +30,9 @@ func Builtin() (map[string]*Profile, error) {
 		if err != nil {
 			return nil, fmt.Errorf("builtin profile %s: %w", e.Name(), err)
 		}
-		out[p.Name] = p
+		if err := registerProfile(out, p); err != nil {
+			return nil, fmt.Errorf("builtin profile %s: %w", e.Name(), err)
+		}
 	}
 	return out, nil
 }
@@ -42,7 +44,10 @@ func BuiltinNames() ([]string, error) {
 		return nil, err
 	}
 	names := make([]string, 0, len(profiles))
-	for name := range profiles {
+	for name, p := range profiles {
+		if p.Name != name {
+			continue
+		}
 		names = append(names, name)
 	}
 	sort.Strings(names)

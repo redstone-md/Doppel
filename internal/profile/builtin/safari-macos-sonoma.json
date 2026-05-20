@@ -1,6 +1,7 @@
 {
-  "name": "safari-macos",
-  "description": "Safari 17 on macOS Sonoma",
+  "name": "safari-macos-sonoma",
+  "aliases": ["safari-macos", "macos-safari"],
+  "description": "Safari 17.4 on macOS Sonoma",
   "client_hello": "safari",
   "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
   "alpn": ["h2", "http/1.1"],

@@ -1,0 +1,43 @@
+{
+  "name": "firefox-win10",
+  "aliases": ["windows10-firefox"],
+  "description": "Firefox 133 on Windows 10 x64",
+  "client_hello": "firefox",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0",
+  "alpn": ["h2", "http/1.1"],
+  "headers": {
+    "order": [
+      "host",
+      "user-agent",
+      "accept",
+      "accept-language",
+      "accept-encoding",
+      "upgrade-insecure-requests",
+      "sec-fetch-dest",
+      "sec-fetch-mode",
+      "sec-fetch-site",
+      "sec-fetch-user",
+      "priority"
+    ],
+    "set": {
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate, br, zstd",
+      "Upgrade-Insecure-Requests": "1",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+      "Priority": "u=0, i"
+    }
+  },
+  "http2": {
+    "settings": [
+      { "name": "HEADER_TABLE_SIZE", "value": 65536 },
+      { "name": "INITIAL_WINDOW_SIZE", "value": 131072 },
+      { "name": "MAX_FRAME_SIZE", "value": 16384 }
+    ],
+    "connection_window_update": 12517377,
+    "pseudo_header_order": [":method", ":path", ":authority", ":scheme"]
+  }
+}

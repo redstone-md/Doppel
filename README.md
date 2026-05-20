@@ -122,7 +122,7 @@ doppel init
 Start the proxy with a built-in profile:
 
 ```sh
-doppel run --profile iphone15-safari
+doppel run --profile safari-ios-iphone15
 ```
 
 Point a client at Doppel:
@@ -142,14 +142,14 @@ curl.exe https://example.com
 Verify the upstream fingerprint path without running the proxy:
 
 ```sh
-doppel verify --profile iphone15-safari
+doppel verify --profile safari-ios-iphone15
 ```
 
 The `verify` command fetches a fingerprint-reporting endpoint and prints what
 the server observed:
 
 ```text
-profile : iphone15-safari
+profile : safari-ios-iphone15
 url     : https://get.ja3.zone/
 status  : 200 OK
 protocol: HTTP/2.0
@@ -192,11 +192,22 @@ User-Agent, browser headers, header order, HTTP/2 SETTINGS, initial WINDOW_UPDAT
 
 | Name | Device identity |
 | --- | --- |
-| `iphone15-safari` | iPhone 15 Pro, iOS 17, Mobile Safari |
-| `chrome-android` | Chrome 131 on Android 14, Pixel 8 |
-| `chrome-windows` | Chrome 131 on Windows 11 |
-| `firefox-windows` | Firefox 133 on Windows 11 |
-| `safari-macos` | Safari 17 on macOS Sonoma |
+| `chrome-win11` | Chrome 131 on Windows 11 x64 |
+| `chrome-win10` | Chrome 131 on Windows 10 x64 |
+| `edge-win11` | Microsoft Edge 131 on Windows 11 x64 |
+| `edge-win10` | Microsoft Edge 131 on Windows 10 x64 |
+| `firefox-win11` | Firefox 133 on Windows 11 x64 |
+| `firefox-win10` | Firefox 133 on Windows 10 x64 |
+| `chrome-macos-sonoma` | Chrome 131 on macOS Sonoma |
+| `safari-macos-sonoma` | Safari 17.4 on macOS Sonoma |
+| `safari-macos-ventura` | Safari 17.4 on macOS Ventura |
+| `chrome-android-pixel8` | Chrome 131 on Android 14, Pixel 8 |
+| `chrome-android-galaxy-s24` | Chrome 131 on Android 14, Galaxy S24 |
+| `safari-ios-iphone15` | Mobile Safari on iPhone 15 Pro, iOS 17.4 |
+| `safari-ios-iphone14` | Mobile Safari on iPhone 14 Pro, iOS 17.4 |
+
+Older names such as `chrome-windows`, `firefox-windows`, `chrome-android`,
+`iphone15-safari`, and `safari-macos` are still accepted as aliases.
 
 List profiles available on your machine:
 
@@ -252,14 +263,14 @@ and `verify`. Provider-style `socks5://host:port:user:pass` URLs are accepted.
 HTTPS proxy environment variables, and stops the proxy when the child exits:
 
 ```sh
-doppel launch --profile chrome-windows -- curl https://example.com
+doppel launch --profile chrome-win11 -- curl https://example.com
 ```
 
 For Electron or Chromium-based desktop apps, add `--electron`. Doppel appends
 Chromium proxy switches so the app does not need proxychains or LD_PRELOAD:
 
 ```sh
-doppel launch --profile chrome-windows --electron -- /path/to/electron-app
+doppel launch --profile chrome-win11 --electron -- /path/to/electron-app
 ```
 
 By default the Chromium switch proxies HTTPS URLs only, because Doppel expects a
@@ -269,7 +280,7 @@ for Windows, macOS, Linux, and Electron notes.
 ### curl
 
 ```sh
-doppel run --profile chrome-windows
+doppel run --profile chrome-win11
 curl --proxy socks5h://127.0.0.1:8080 https://example.com
 ```
 

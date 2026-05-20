@@ -16,7 +16,7 @@ func testProfile(t *testing.T) *profile.Profile {
 	if err != nil {
 		t.Fatalf("load builtin profiles: %v", err)
 	}
-	return profiles["chrome-windows"]
+	return profiles["chrome-win11"]
 }
 
 func echoHandler() http.Handler {

@@ -18,8 +18,16 @@ func TestBuiltinProfilesLoad(t *testing.T) {
 			t.Errorf("built-in profile %q is invalid: %v", name, err)
 		}
 	}
-	if _, ok := profiles["iphone15-safari"]; !ok {
-		t.Error("expected built-in profile iphone15-safari")
+	for _, name := range []string{"safari-ios-iphone15", "chrome-win11", "chrome-win10", "edge-win11", "firefox-win10"} {
+		if _, ok := profiles[name]; !ok {
+			t.Errorf("expected built-in profile %s", name)
+		}
+	}
+	if got := profiles["iphone15-safari"]; got == nil || got.Name != "safari-ios-iphone15" {
+		t.Error("expected legacy alias iphone15-safari to resolve to safari-ios-iphone15")
+	}
+	if got := profiles["chrome-windows"]; got == nil || got.Name != "chrome-win11" {
+		t.Error("expected legacy alias chrome-windows to resolve to chrome-win11")
 	}
 }
 

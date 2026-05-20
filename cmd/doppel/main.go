@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/redstone-md/Doppel/internal/ca"
@@ -283,12 +284,20 @@ func cmdProfiles(args []string) error {
 		return err
 	}
 	names := make([]string, 0, len(profiles))
-	for name := range profiles {
+	for name, p := range profiles {
+		if name != p.Name {
+			continue
+		}
 		names = append(names, name)
 	}
 	sort.Strings(names)
 	for _, name := range names {
-		fmt.Printf("%-22s [%-7s] %s\n", name, source[name], profiles[name].Description)
+		p := profiles[name]
+		description := p.Description
+		if len(p.Aliases) > 0 {
+			description = fmt.Sprintf("%s (aliases: %s)", description, strings.Join(p.Aliases, ", "))
+		}
+		fmt.Printf("%-24s [%-7s] %s\n", name, source[name], description)
 	}
 	return nil
 }
