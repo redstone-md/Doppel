@@ -87,13 +87,16 @@ effect.
 
 ## Install
 
-Requires Go 1.23 or newer.
+Download prebuilt binaries from
+[GitHub Releases](https://github.com/redstone-md/Doppel/releases), or install
+with Go 1.23 or newer:
 
 ```sh
 go install github.com/redstone-md/Doppel/cmd/doppel@latest
 ```
 
-Build from source:
+Release archives include the binary, README, changelog, and license. Build from
+source:
 
 ```sh
 git clone https://github.com/redstone-md/Doppel.git

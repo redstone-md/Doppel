@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build release artifacts
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            archive: tar.gz
+          - goos: linux
+            goarch: arm64
+            archive: tar.gz
+          - goos: darwin
+            goarch: amd64
+            archive: tar.gz
+          - goos: darwin
+            goarch: arm64
+            archive: tar.gz
+          - goos: windows
+            goarch: amd64
+            archive: zip
+          - goos: windows
+            goarch: arm64
+            archive: zip
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          check-latest: true
+
+      - name: Build
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          set -euo pipefail
+          version=${GITHUB_REF_NAME}
+          mkdir -p dist
+          binary=doppel
+          if [ "$GOOS" = "windows" ]; then
+            binary=doppel.exe
+          fi
+          go build -trimpath -ldflags "-s -w -X main.version=${version}" -o "dist/${binary}" ./cmd/doppel
+
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${GITHUB_REF_NAME}
+          name="doppel_${version}_${{ matrix.goos }}_${{ matrix.goarch }}"
+          mkdir -p "dist/${name}"
+          cp README.md LICENSE CHANGELOG.md "dist/${name}/"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            cp dist/doppel.exe "dist/${name}/"
+            (cd dist && zip -qr "${name}.zip" "${name}")
+          else
+            cp dist/doppel "dist/${name}/"
+            tar -C dist -czf "dist/${name}.tar.gz" "${name}"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: doppel-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/doppel_${{ github.ref_name }}_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.archive }}
+          if-no-files-found: error
+
+  publish:
+    name: publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd artifacts
+          sha256sum doppel_*.tar.gz doppel_*.zip > SHA256SUMS.txt
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" artifacts/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "Doppel ${GITHUB_REF_NAME}" \
+            --notes-file .github/release-notes.md
