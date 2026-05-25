@@ -38,6 +38,12 @@ func (s *Server) handleSOCKS5(pc *peekConn) {
 	// the handshake deadline.
 	_ = pc.SetReadDeadline(time.Time{})
 
+	// Passthrough domains skip MITM entirely — raw TCP tunnel.
+	if s.Interceptor.MatchesPassthrough(target) {
+		s.Interceptor.Passthrough(pc, target)
+		return
+	}
+
 	// pc now carries the raw client TLS stream. Intercept takes ownership
 	// of the connection and closes it when done.
 	s.Interceptor.Intercept(pc, target)

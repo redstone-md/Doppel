@@ -117,6 +117,8 @@ func cmdRun(args []string) error {
 	upstreamProxyURL := fs.String("upstream-proxy", os.Getenv("DOPPEL_UPSTREAM_PROXY"), "upstream SOCKS5 proxy URL")
 	keepHeaders := fs.Bool("keep-headers", false, "preserve original client headers; don't rewrite with profile values")
 	bypass := fs.String("bypass", "", "comma-separated proxy bypass list (e.g. \"<local>,.ttwstatic.com\")")
+	passthrough := fs.String("passthrough", "", "comma-separated MITM bypass domains (e.g. \".tiktokv.com,.byteoversea.com\")")
+	tlsProfile := fs.String("tls-profile", "", "override TLS fingerprint profile (chrome, safari, safari-ios, firefox, edge, randomized)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -135,6 +137,13 @@ func cmdRun(args []string) error {
 	selected, err := loadProfile(cfg, cfg.Profile)
 	if err != nil {
 		return err
+	}
+	if *tlsProfile != "" {
+		if err := validateClientHello(*tlsProfile); err != nil {
+			return err
+		}
+		selected.ClientHello = *tlsProfile
+		logger.Info("overriding TLS profile", "profile", *tlsProfile)
 	}
 	upstreamProxy, err := upstream.ParseProxy(*upstreamProxyURL)
 	if err != nil {
@@ -155,11 +164,12 @@ func cmdRun(args []string) error {
 		Addr:   cfg.Addr,
 		Logger: logger,
 		Interceptor: &mitm.Interceptor{
-			CA:             authority,
-			Profile:        selected,
-			Transport:      transport,
-			Logger:         logger,
-			RewriteHeaders: !*keepHeaders,
+			CA:              authority,
+			Profile:         selected,
+			Transport:       transport,
+			Logger:          logger,
+			RewriteHeaders:  !*keepHeaders,
+			PassthroughList: splitBypass(*passthrough),
 		},
 	}
 
@@ -189,6 +199,8 @@ func cmdLaunch(args []string) error {
 	allSchemes := fs.Bool("all-schemes", false, "with -electron, proxy every Chromium URL scheme instead of HTTPS only")
 	bypass := fs.String("bypass", "<local>", "comma-separated proxy bypass list (e.g. \"<local>,.ttwstatic.com\")")
 	keepHeaders := fs.Bool("keep-headers", false, "preserve original client headers; don't rewrite with profile values")
+	passthrough := fs.String("passthrough", "", "comma-separated MITM bypass domains (e.g. \".tiktokv.com,.byteoversea.com\")")
+	tlsProfile := fs.String("tls-profile", "", "override TLS fingerprint profile (chrome, safari, safari-ios, firefox, edge, randomized)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -211,6 +223,13 @@ func cmdLaunch(args []string) error {
 	selected, err := loadProfile(cfg, cfg.Profile)
 	if err != nil {
 		return err
+	}
+	if *tlsProfile != "" {
+		if err := validateClientHello(*tlsProfile); err != nil {
+			return err
+		}
+		selected.ClientHello = *tlsProfile
+		logger.Info("overriding TLS profile", "profile", *tlsProfile)
 	}
 	upstreamProxy, err := upstream.ParseProxy(*upstreamProxyURL)
 	if err != nil {
@@ -238,11 +257,12 @@ func cmdLaunch(args []string) error {
 		Addr:   cfg.Addr,
 		Logger: logger,
 		Interceptor: &mitm.Interceptor{
-			CA:             authority,
-			Profile:        selected,
-			Transport:      transport,
-			Logger:         logger,
-			RewriteHeaders: !*keepHeaders,
+			CA:              authority,
+			Profile:         selected,
+			Transport:       transport,
+			Logger:          logger,
+			RewriteHeaders:  !*keepHeaders,
+			PassthroughList: splitBypass(*passthrough),
 		},
 	}
 
@@ -448,6 +468,16 @@ func newLogger(verbose bool) *slog.Logger {
 		level = slog.LevelDebug
 	}
 	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+}
+
+// validateClientHello checks that name is a known uTLS ClientHello ID.
+func validateClientHello(name string) error {
+	for _, valid := range upstream.ClientHelloNames() {
+		if strings.EqualFold(name, valid) {
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown TLS profile %q (supported: %s)", name, strings.Join(upstream.ClientHelloNames(), ", "))
 }
 
 // splitBypass splits a comma-separated bypass list into a string slice,

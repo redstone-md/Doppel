@@ -64,7 +64,7 @@ func (d *Dialer) DialWithALPN(ctx context.Context, p *profile.Profile, host stri
 	}
 
 	target := net.JoinHostPort(hostname, port)
-	raw, err := d.dialTCP(ctx, target, timeout)
+	raw, err := d.DialTCP(ctx, target, timeout)
 	if err != nil {
 		return nil, fmt.Errorf("dial %s: %w", host, err)
 	}
@@ -97,7 +97,10 @@ func (d *Dialer) DialWithALPN(ctx context.Context, p *profile.Profile, host stri
 	return &Conn{Conn: uconn, ALPN: uconn.ConnectionState().NegotiatedProtocol}, nil
 }
 
-func (d *Dialer) dialTCP(ctx context.Context, target string, timeout time.Duration) (net.Conn, error) {
+// DialTCP establishes a raw TCP connection to target (host:port), respecting
+// the upstream proxy and bypass list. It is exported for use by the MITM
+// passthrough tunnel.
+func (d *Dialer) DialTCP(ctx context.Context, target string, timeout time.Duration) (net.Conn, error) {
 	host, _, err := net.SplitHostPort(target)
 	if err != nil {
 		host = target

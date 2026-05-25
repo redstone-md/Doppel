@@ -9,6 +9,7 @@ package mitm
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/redstone-md/Doppel/internal/ca"
 	"github.com/redstone-md/Doppel/internal/profile"
@@ -51,6 +53,14 @@ type Interceptor struct {
 	// pass through unchanged. The TLS fingerprint is always applied regardless
 	// of this setting.
 	RewriteHeaders bool
+
+	// PassthroughList lists host patterns that should be tunneled directly
+	// without MITM interception. The pattern syntax matches Dialer.BypassList:
+	//   "<local>"          matches localhost / loopback
+	//   "host.com"         exact match only
+	//   ".host.com"        matches host.com and any subdomain
+	//   ".tiktokv.com"     matches tnc16.tiktokv.com, gecko-sg.tiktokv.com, etc.
+	PassthroughList []string
 }
 
 // Intercept terminates TLS on clientConn (which the client opened believing
@@ -198,6 +208,81 @@ func (ic *Interceptor) forwardWebSocket(client net.Conn, req *http.Request, host
 	ic.logger().Info("websocket proxied", "profile", ic.Profile.Name, "url", targetURL)
 	tunnel(client, conn, upstreamReader)
 	return errConnectionTakenOver
+}
+
+// matchesPassthrough reports whether host matches one of the passthrough
+// patterns. See PassthroughList for the pattern syntax.
+func (ic *Interceptor) MatchesPassthrough(host string) bool {
+	hostname, _, err := net.SplitHostPort(host)
+	if err != nil {
+		hostname = host
+	}
+	for _, pattern := range ic.PassthroughList {
+		pattern = strings.TrimSpace(pattern)
+		if pattern == "" {
+			continue
+		}
+		if pattern == "<local>" {
+			if hostname == "127.0.0.1" || hostname == "::1" || hostname == "localhost" {
+				return true
+			}
+			continue
+		}
+		if strings.HasPrefix(pattern, ".") {
+			// .domain.com matches domain.com and any subdomain
+			suffix := strings.ToLower(pattern)
+			h := strings.ToLower(hostname)
+			if h == suffix[1:] || strings.HasSuffix(h, suffix) {
+				return true
+			}
+		} else {
+			if strings.EqualFold(hostname, pattern) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Passthrough creates a raw TCP tunnel between clientConn and the target host,
+// bypassing MITM entirely. The client's native TLS stream reaches the upstream
+// server unmodified. clientConn is closed on return.
+func (ic *Interceptor) Passthrough(clientConn net.Conn, host string) {
+	defer clientConn.Close()
+
+	hostname, port := splitHost(host)
+	target := net.JoinHostPort(hostname, port)
+
+	timeout := 30 * time.Second
+	upstreamConn, err := ic.Transport.Dialer.DialTCP(context.Background(), target, timeout)
+	if err != nil {
+		ic.logger().Warn("passthrough dial failed", "host", host, "error", err)
+		return
+	}
+	defer upstreamConn.Close()
+
+	ic.logger().Info("passthrough tunnel open", "profile", ic.Profile.Name, "host", host)
+
+	done := make(chan struct{}, 2)
+	go func() {
+		_, _ = io.Copy(upstreamConn, clientConn)
+		done <- struct{}{}
+	}()
+	go func() {
+		_, _ = io.Copy(clientConn, upstreamConn)
+		done <- struct{}{}
+	}()
+	<-done
+
+	ic.logger().Info("passthrough tunnel closed", "host", host)
+}
+
+// splitHost splits "host:port" into hostname and port (defaults to "443").
+func splitHost(host string) (hostname, port string) {
+	if h, p, err := net.SplitHostPort(host); err == nil {
+		return h, p
+	}
+	return host, "443"
 }
 
 func isWebSocketUpgrade(req *http.Request) bool {
