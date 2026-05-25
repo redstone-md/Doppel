@@ -116,6 +116,7 @@ func cmdRun(args []string) error {
 	insecure := fs.Bool("insecure", false, "skip upstream certificate verification (debugging only)")
 	upstreamProxyURL := fs.String("upstream-proxy", os.Getenv("DOPPEL_UPSTREAM_PROXY"), "upstream SOCKS5 proxy URL")
 	keepHeaders := fs.Bool("keep-headers", false, "preserve original client headers; don't rewrite with profile values")
+	bypass := fs.String("bypass", "", "comma-separated proxy bypass list (e.g. \"<local>,.ttwstatic.com\")")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -141,7 +142,11 @@ func cmdRun(args []string) error {
 	}
 
 	transport := &upstream.RoundTripper{
-		Dialer:  &upstream.Dialer{SkipVerify: *insecure, UpstreamProxy: upstreamProxy},
+		Dialer: &upstream.Dialer{
+			SkipVerify:    *insecure,
+			UpstreamProxy: upstreamProxy,
+			BypassList:    splitBypass(*bypass),
+		},
 		Profile: selected,
 	}
 	defer transport.Close()
@@ -182,7 +187,7 @@ func cmdLaunch(args []string) error {
 	includeEnv := fs.Bool("env", true, "set HTTPS proxy and CA environment variables for the child")
 	electron := fs.Bool("electron", false, "append Chromium/Electron proxy command-line switches")
 	allSchemes := fs.Bool("all-schemes", false, "with -electron, proxy every Chromium URL scheme instead of HTTPS only")
-	bypass := fs.String("bypass", "<local>", "Chromium proxy bypass list used with -electron")
+	bypass := fs.String("bypass", "<local>", "comma-separated proxy bypass list (e.g. \"<local>,.ttwstatic.com\")")
 	keepHeaders := fs.Bool("keep-headers", false, "preserve original client headers; don't rewrite with profile values")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -213,10 +218,13 @@ func cmdLaunch(args []string) error {
 	}
 
 	transport := &upstream.RoundTripper{
-		Dialer:  &upstream.Dialer{SkipVerify: *insecure, UpstreamProxy: upstreamProxy},
+		Dialer: &upstream.Dialer{
+			SkipVerify:    *insecure,
+			UpstreamProxy: upstreamProxy,
+			BypassList:    splitBypass(*bypass),
+		},
 		Profile: selected,
 	}
-	defer transport.Close()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
@@ -440,6 +448,23 @@ func newLogger(verbose bool) *slog.Logger {
 		level = slog.LevelDebug
 	}
 	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+}
+
+// splitBypass splits a comma-separated bypass list into a string slice,
+// trimming whitespace and skipping empty entries.
+func splitBypass(list string) []string {
+	if list == "" {
+		return nil
+	}
+	parts := strings.Split(list, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+	return result
 }
 
 func usage() {

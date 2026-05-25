@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	utls "github.com/refraction-networking/utls"
@@ -33,6 +34,12 @@ type Dialer struct {
 	// UpstreamProxy routes Doppel's outbound TCP connection through a proxy.
 	// Nil means direct egress.
 	UpstreamProxy *ProxyConfig
+	// BypassList lists host patterns that must bypass the upstream proxy and
+	// connect directly. Each entry is a domain or subdomain pattern:
+	//   "<local>"  matches localhost / loopback addresses
+	//   "host.com" exact match only
+	//   ".host.com" matches "host.com" and any subdomain of "host.com"
+	BypassList []string
 }
 
 // Dial connects to host (host:port, defaulting to port 443) and performs a
@@ -91,11 +98,45 @@ func (d *Dialer) DialWithALPN(ctx context.Context, p *profile.Profile, host stri
 }
 
 func (d *Dialer) dialTCP(ctx context.Context, target string, timeout time.Duration) (net.Conn, error) {
-	if d.UpstreamProxy != nil {
+	host, _, err := net.SplitHostPort(target)
+	if err != nil {
+		host = target
+	}
+	if d.UpstreamProxy != nil && !d.matchesBypass(host) {
 		return d.UpstreamProxy.Dial(ctx, "tcp", target, timeout)
 	}
 	tcpDialer := &net.Dialer{Timeout: timeout}
 	return tcpDialer.DialContext(ctx, "tcp", target)
+}
+
+// matchesBypass reports whether host matches one of the bypass patterns.
+func (d *Dialer) matchesBypass(host string) bool {
+	for _, pattern := range d.BypassList {
+		pattern = strings.TrimSpace(pattern)
+		if pattern == "" {
+			continue
+		}
+		if pattern == "<local>" {
+			if host == "127.0.0.1" || host == "::1" || host == "localhost" {
+				return true
+			}
+			continue
+		}
+		if strings.HasPrefix(pattern, ".") {
+			// .domain.com matches domain.com and any subdomain
+			suffix := strings.ToLower(pattern)
+			h := strings.ToLower(host)
+			if h == suffix[1:] || strings.HasSuffix(h, suffix) {
+				return true
+			}
+		} else {
+			// exact match
+			if strings.EqualFold(host, pattern) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func splitHostPort(host string) (hostname, port string) {
