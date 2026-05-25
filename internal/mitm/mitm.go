@@ -44,6 +44,13 @@ type Interceptor struct {
 	Profile   *profile.Profile
 	Transport *upstream.RoundTripper
 	Logger    *slog.Logger
+
+	// RewriteHeaders controls whether the client's original HTTP headers are
+	// overwritten with the profile's values (User-Agent, Accept, Sec-Fetch-*,
+	// etc.). When false, only hop-by-hop headers are stripped and the rest
+	// pass through unchanged. The TLS fingerprint is always applied regardless
+	// of this setting.
+	RewriteHeaders bool
 }
 
 // Intercept terminates TLS on clientConn (which the client opened believing
@@ -106,7 +113,10 @@ func (ic *Interceptor) forward(client net.Conn, req *http.Request, host string) 
 	}
 
 	// Rewrite identity-revealing headers so they match the profile.
-	ic.Profile.Apply(outReq)
+	// Skipped when RewriteHeaders is false to preserve the client's own headers.
+	if ic.RewriteHeaders {
+		ic.Profile.Apply(outReq)
+	}
 
 	resp, err := ic.Transport.RoundTrip(outReq)
 	if err != nil {
@@ -146,7 +156,7 @@ func (ic *Interceptor) forwardWebSocket(client net.Conn, req *http.Request, host
 	for _, name := range []string{"Proxy-Connection", "Proxy-Authenticate", "Proxy-Authorization"} {
 		outReq.Header.Del(name)
 	}
-	if ic.Profile.UserAgent != "" {
+	if ic.RewriteHeaders && ic.Profile.UserAgent != "" {
 		outReq.Header.Set("User-Agent", ic.Profile.UserAgent)
 	}
 

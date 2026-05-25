@@ -115,6 +115,7 @@ func cmdRun(args []string) error {
 	verbose := fs.Bool("v", false, "verbose (debug) logging")
 	insecure := fs.Bool("insecure", false, "skip upstream certificate verification (debugging only)")
 	upstreamProxyURL := fs.String("upstream-proxy", os.Getenv("DOPPEL_UPSTREAM_PROXY"), "upstream SOCKS5 proxy URL")
+	keepHeaders := fs.Bool("keep-headers", false, "preserve original client headers; don't rewrite with profile values")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -149,10 +150,11 @@ func cmdRun(args []string) error {
 		Addr:   cfg.Addr,
 		Logger: logger,
 		Interceptor: &mitm.Interceptor{
-			CA:        authority,
-			Profile:   selected,
-			Transport: transport,
-			Logger:    logger,
+			CA:             authority,
+			Profile:        selected,
+			Transport:      transport,
+			Logger:         logger,
+			RewriteHeaders: !*keepHeaders,
 		},
 	}
 
@@ -181,6 +183,7 @@ func cmdLaunch(args []string) error {
 	electron := fs.Bool("electron", false, "append Chromium/Electron proxy command-line switches")
 	allSchemes := fs.Bool("all-schemes", false, "with -electron, proxy every Chromium URL scheme instead of HTTPS only")
 	bypass := fs.String("bypass", "<local>", "Chromium proxy bypass list used with -electron")
+	keepHeaders := fs.Bool("keep-headers", false, "preserve original client headers; don't rewrite with profile values")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -227,10 +230,11 @@ func cmdLaunch(args []string) error {
 		Addr:   cfg.Addr,
 		Logger: logger,
 		Interceptor: &mitm.Interceptor{
-			CA:        authority,
-			Profile:   selected,
-			Transport: transport,
-			Logger:    logger,
+			CA:             authority,
+			Profile:        selected,
+			Transport:      transport,
+			Logger:         logger,
+			RewriteHeaders: !*keepHeaders,
 		},
 	}
 
